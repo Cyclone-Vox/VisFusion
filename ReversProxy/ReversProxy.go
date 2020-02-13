@@ -21,7 +21,7 @@ func ProxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath
 	p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath)
 }
 
-//this function will
+//this function will call a trail of functions to set up proxy serve
 func (p *proxy) proxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string) {
 	p.hostTarget = make(map[string]string)
 	p.loadProxyMap(ProxyMap)
