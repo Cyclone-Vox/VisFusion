@@ -7,6 +7,7 @@ import (
 	"net"
 )
 
+
 func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
@@ -16,7 +17,6 @@ func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 		defer r.Close()
 
 		switch path {
-
 		//if Path equals "devreg",it Means this device's request is login or register
 		case "devreg":
 			CertCheckOrReg(ctx)
@@ -39,13 +39,14 @@ func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 
 			return
 		}
-		return
 	}
+
 	ln, err := net.Listen("tcp4", ":"+ip)
 	if err != nil {
 		panic(fasthttp.Serve(ln, requestHandler))
 	}
 
+	//wait context cancel,then close the listener and set up a new http service
 	select {
 	case <-ctx.Done():
 		ln.Close()

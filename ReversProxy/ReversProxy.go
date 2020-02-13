@@ -2,6 +2,7 @@ package ReversProxy
 
 import (
 	"context"
+	"sync"
 
 	"log"
 
@@ -14,13 +15,23 @@ type ExtensionCfg struct{
 	url string
 	pattern string
 }
+type proxy struct{
+	hostTarget  map[string]ExtensionCfg
+}
 
+func (p *proxy)ProxySetUp(Ctx context.Context,ProxyMap *sync.Map)  {
+	p.hostTarget= make(map[string]ExtensionCfg)
+	p.loadProxyMap(ProxyMap)
+}
 
-var hostTarget = make(map[string]*ExtensionCfg)
-var hostProxy map[string]*httputil.ReverseProxy
+func (p *proxy)loadProxyMap(ProxyMap *sync.Map)  {
+	ProxyMap.Range(func(key, value interface{}) bool {
+		p.hostTarget[key.(string)]=value.(ExtensionCfg)
+		return true
+	})
+}
 
-
-func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *proxy)ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
 	// 直接从缓存取出
@@ -31,7 +42,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 检查域名白名单
 	if target, ok := hostTarget[host]; ok {
-		remoteUrl, err := url.Parse(target.url)
+		remoteUrl, err := url.Parse(c.url)
 		if err != nil {
 			log.Println("target parse fail:", err)
 			return
@@ -41,24 +52,16 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		hostProxy[host] = proxy
 		proxy.ServeHTTP(w, r)
 		return
-	}
-	w.Write([]byte("403: Host forbidden " + host))
-}
 
+		w.Write([]byte("403: Host forbidden " + host))
+	}
+}
 func ReversProxySetUp(ctx context.Context, Port string, caCertPath string, CertPath string, KeyPath string) {
 
-	if ln, err := newTlsLn(Port, caCertPath, CertPath, KeyPath); err==nil {
+		ln, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
+		CheckError(err)
+		p:=&proxy{}
+		http.Handle("/",p)
+		http.Serve(ln,p)
 
-		requestHandler := func(w http.ResponseWriter, r *http.Request){
-
-			switch r.URL.Path{
-
-
-
-
-			}
-		}
-
-		http.Serve(ln,)
-	}
 }
