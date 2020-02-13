@@ -19,9 +19,18 @@ type proxy struct{
 	hostTarget  map[string]ExtensionCfg
 }
 
-func (p *proxy)ProxySetUp(Ctx context.Context,ProxyMap *sync.Map)  {
+func (p *proxy)ProxySetUp(ctx context.Context, ProxyMap *sync.Map,Port string, caCertPath string, CertPath string, KeyPath string)  {
 	p.hostTarget= make(map[string]ExtensionCfg)
 	p.loadProxyMap(ProxyMap)
+	lnTls, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
+	CheckError(err)
+	http.Handle("/",p)
+	http.Serve(lnTls,p)
+
+	select {
+	case <-ctx.Done():
+		p.ProxySetUp(ctx,ProxyMap,Port,caCertPath,CertPath,KeyPath)
+	}
 }
 
 func (p *proxy)loadProxyMap(ProxyMap *sync.Map)  {
@@ -56,12 +65,12 @@ func (p *proxy)ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("403: Host forbidden " + host))
 	}
 }
-func ReversProxySetUp(ctx context.Context, Port string, caCertPath string, CertPath string, KeyPath string) {
-
-		ln, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
-		CheckError(err)
-		p:=&proxy{}
-		http.Handle("/",p)
-		http.Serve(ln,p)
-
-}
+//func ReversProxySetUp(ctx context.Context, Port string, caCertPath string, CertPath string, KeyPath string) {
+//
+//		ln, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
+//		CheckError(err)
+//		p:=&proxy{}
+//		http.Handle("/",p)
+//		http.Serve(ln,p)
+//
+//}
