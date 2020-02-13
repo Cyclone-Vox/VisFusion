@@ -2,77 +2,74 @@ package ReversProxy
 
 import (
 	"context"
-	"sync"
-
-	"log"
-
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+
+	"sync"
 )
 
-type ExtensionCfg struct{
-	url string
-	pattern string
+type proxy struct {
+	//key=Pattern;value=targetHost
+	hostTarget map[string]string
+	//key=Pattern;value=targetHost
+	ProxyCache map[string]*httputil.ReverseProxy
 }
-type proxy struct{
-	hostTarget  map[string]ExtensionCfg
+//ProxySetUp(..) is external Func for main() Call
+func ProxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string) {
+	p := &proxy{}
+	p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath)
 }
 
-func (p *proxy)ProxySetUp(ctx context.Context, ProxyMap *sync.Map,Port string, caCertPath string, CertPath string, KeyPath string)  {
-	p.hostTarget= make(map[string]ExtensionCfg)
+//this function will
+func (p *proxy) proxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string) {
+	p.hostTarget = make(map[string]string)
 	p.loadProxyMap(ProxyMap)
+	p.setUpProxy()
+
+	//Creat Https Listener And SetUp Proxy Server
 	lnTls, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
 	CheckError(err)
-	http.Handle("/",p)
-	http.Serve(lnTls,p)
+	http.HandleFunc("/", p.HandlerWithCache)
+	http.Serve(lnTls, nil)
 
+	//wait Context done,and reset up proxy
 	select {
 	case <-ctx.Done():
 		lnTls.Close()
-		p.ProxySetUp(ctx,ProxyMap,Port,caCertPath,CertPath,KeyPath)
+		CheckError(err)
+		p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath)
 	}
 }
 
-func (p *proxy)loadProxyMap(ProxyMap *sync.Map)  {
+//Range the ProxyMap，set the configurations it in hostTarget
+func (p *proxy) loadProxyMap(ProxyMap *sync.Map) {
 	ProxyMap.Range(func(key, value interface{}) bool {
-		p.hostTarget[key.(string)]=value.(ExtensionCfg)
+		p.hostTarget[key.(string)] = value.(string)
 		return true
 	})
 }
 
-func (p *proxy)ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	host := r.Host
+//Set Up the Proxy handler and save it in ProxyCache as cache
+func (p *proxy) setUpProxy() {
 
-	// 直接从缓存取出
-	if fn, ok := hostProxy[host]; ok {
-		fn.ServeHTTP(w, r)
-		return
-	}
-
-	// 检查域名白名单
-	if target, ok := hostTarget[host]; ok {
-		remoteUrl, err := url.Parse(c.url)
-		if err != nil {
-			log.Println("target parse fail:", err)
-			return
-		}
-
+	for pattern, targetHost := range p.hostTarget {
+		remoteUrl, err := url.Parse(targetHost)
+		CheckError(err)
 		proxy := httputil.NewSingleHostReverseProxy(remoteUrl)
-		hostProxy[host] = proxy
-		proxy.ServeHTTP(w, r)
-		return
+		p.ProxyCache[pattern] = proxy
+	}
+}
 
-		w.Write([]byte("403: Host forbidden " + host))
+//Main Handler for Proxy Serve, it will find ProxyHandler in the Map saves Cache
+func (p *proxy) HandlerWithCache(w http.ResponseWriter, r *http.Request) {
+
+	pattern := r.URL.Path
+	if ProxyFn, ok := p.ProxyCache[pattern]; ok {
+		ProxyFn.ServeHTTP(w, r)
+	} else {
+		_, err := w.Write([]byte("403: Host forbidden" + r.URL.String() ))
+		CheckError(err)
 	}
 
 }
-//func ReversProxySetUp(ctx context.Context, Port string, caCertPath string, CertPath string, KeyPath string) {
-//
-//		ln, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
-//		CheckError(err)
-//		p:=&proxy{}
-//		http.Handle("/",p)
-//		http.Serve(ln,p)
-//
-//}
