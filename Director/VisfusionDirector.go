@@ -2,26 +2,28 @@ package Director
 
 import (
 	"context"
+	"github.com/garyburd/redigo/redis"
 	"github.com/valyala/fasthttp"
+	"net"
 )
 
-func Director(ctx context.Context, ip string) {
+func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		path := string(ctx.Path())
 		tk := ctx.Request.Header.Peek("token")
-		r := CfgLoad.Conf.RedisPool.Get()
+		r := RedisPool.Get()
 		defer r.Close()
-		//Check token in redis
 
-		// if it not raises an error,it will
-		//Select Data Mode Open
 		switch path {
+
+		//if Path equals "devreg",it Means this device's request is login or register
 		case "devreg":
 			CertCheckOrReg(ctx)
 			return
-		default:
 
+		//if Path not equals "devreg",it Means this device's request is licgen or heartbeat
+		default:
 			if err := TokenCheck(string(tk), r); err == nil {
 				switch path {
 				case "/licgen":
@@ -37,8 +39,17 @@ func Director(ctx context.Context, ip string) {
 
 			return
 		}
+		return
+	}
+	ln, err := net.Listen("tcp4", ":"+ip)
+	if err != nil {
+		panic(fasthttp.Serve(ln, requestHandler))
 	}
 
-	
-}
+	select {
+	case <-ctx.Done():
+		ln.Close()
+		Director(ctx, ip, RedisPool)
+	}
 
+}
