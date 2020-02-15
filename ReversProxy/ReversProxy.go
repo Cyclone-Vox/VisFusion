@@ -16,29 +16,35 @@ type proxy struct {
 	ProxyCache map[string]*httputil.ReverseProxy
 }
 //ProxySetUp(..) is external Func for main() Call
-func ProxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string) {
+func ProxySetUp(ctx context.Context, ProxyMap *sync.Map, Port *string, caCertPath *string, CertPath *string, KeyPath *string) {
 	p := &proxy{}
-	p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath)
+	p.proxySetUp(ctx, ProxyMap, *Port, *caCertPath, *CertPath, *KeyPath,0)
 }
 
 //this function will call a trail of functions to set up proxy serve
-func (p *proxy) proxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string) {
+func (p *proxy) proxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string,o int) {
 	p.hostTarget = make(map[string]string)
 	p.loadProxyMap(ProxyMap)
 	p.setUpProxy()
-
+	o++
 	//Creat Https Listener And SetUp Proxy Server
 	lnTls, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
 	CheckError(err)
-	http.HandleFunc("/", p.HandlerWithCache)
-	http.Serve(lnTls, nil)
+	if o==1 {
+		http.HandleFunc("/", p.HandlerWithCache)
+	}
 
-	//wait Context done,and reset up proxy
+	//wait Context done,and reset up proxy function
+	//http.Serve(lnTls, nil)
+	srv := &http.Server{Handler: nil}
+	go ServerClose(ctx,srv)
+	srv.Serve(lnTls)
+
 	select {
 	case <-ctx.Done():
 		lnTls.Close()
 		CheckError(err)
-		p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath)
+		p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath,o)
 	}
 }
 
@@ -72,4 +78,12 @@ func (p *proxy) HandlerWithCache(w http.ResponseWriter, r *http.Request) {
 		CheckError(err)
 	}
 
+}
+
+func ServerClose(ctx context.Context,server *http.Server){
+	select {
+	case <-ctx.Done():
+		server.SetKeepAlivesEnabled(false)
+		server.Shutdown(ctx)
+	}
 }

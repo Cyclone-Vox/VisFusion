@@ -42,10 +42,8 @@ func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 	}
 
 	ln, err := net.Listen("tcp4", ":"+ip)
-	if err != nil {
-		panic(fasthttp.Serve(ln, requestHandler))
-	}
-
+	CheckError(err)
+	fasthttp.Serve(ln, requestHandler)
 	//wait context cancel,then close the listener and set up a new http service
 	select {
 	case <-ctx.Done():
