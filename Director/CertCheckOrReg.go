@@ -1,6 +1,7 @@
 package Director
 
 import (
+	"VisFusion/DataConn"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
@@ -23,7 +24,7 @@ func CertCheckOrReg(ctx *fasthttp.RequestCtx) {
 	var resp []byte
 	err := json.Unmarshal(Req, &jsonget)
 	CheckError(err)
-	r := CfgLoad.Conf.RedisPool.Get()
+	r := DataConn.RedisPool.Get()
 	defer r.Close()
 
 	//判断是否含有machineCode,不含有machineCode时返回

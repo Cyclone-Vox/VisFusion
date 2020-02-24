@@ -1,8 +1,7 @@
 package Director
 
 import (
-
-
+	"VisFusion/DataConn"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
@@ -13,7 +12,7 @@ import (
 func ping(ctx *fasthttp.RequestCtx) {
 
 	tk := ctx.Request.Header.Peek("token")
-	r := CfgLoad.Conf.RedisPool.Get()
+	r :=DataConn.RedisPool.Get()
 	var resp []byte
 	//从redis中获取mc
 
@@ -22,10 +21,6 @@ func ping(ctx *fasthttp.RequestCtx) {
 	sn_pid, err := redis.String(r.Do("GET", mc))
 	CheckError(err)
 	sn_pidSplit := strings.Split(sn_pid, "#")
-
-
-
-
 
 
 

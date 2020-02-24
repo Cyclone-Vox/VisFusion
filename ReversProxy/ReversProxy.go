@@ -15,36 +15,33 @@ type proxy struct {
 	//key=Pattern;value=targetHost
 	ProxyCache map[string]*httputil.ReverseProxy
 }
+
 //ProxySetUp(..) is external Func for main() Call
 func ProxySetUp(ctx context.Context, ProxyMap *sync.Map, Port *string, caCertPath *string, CertPath *string, KeyPath *string) {
 	p := &proxy{}
-	p.proxySetUp(ctx, ProxyMap, *Port, *caCertPath, *CertPath, *KeyPath,0)
+	p.proxySetUp(ctx, ProxyMap, *Port, *caCertPath, *CertPath, *KeyPath)
 }
 
 //this function will call a trail of functions to set up proxy serve
-func (p *proxy) proxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string,o int) {
+func (p *proxy) proxySetUp(ctx context.Context, ProxyMap *sync.Map, Port string, caCertPath string, CertPath string, KeyPath string) {
 	p.hostTarget = make(map[string]string)
 	p.loadProxyMap(ProxyMap)
 	p.setUpProxy()
-	o++
 	//Creat Https Listener And SetUp Proxy Server
 	lnTls, err := newTlsLn(Port, caCertPath, CertPath, KeyPath)
 	CheckError(err)
-	if o==1 {
-		http.HandleFunc("/", p.HandlerWithCache)
-	}
 
+	http.HandleFunc("/", p.HandlerWithCache)
 	//wait Context done,and reset up proxy function
 	//http.Serve(lnTls, nil)
 	srv := &http.Server{Handler: nil}
-	go ServerClose(ctx,srv)
+	go ServerClose(ctx, srv)
 	srv.Serve(lnTls)
 
 	select {
 	case <-ctx.Done():
 		lnTls.Close()
 		CheckError(err)
-		p.proxySetUp(ctx, ProxyMap, Port, caCertPath, CertPath, KeyPath,o)
 	}
 }
 
@@ -58,7 +55,6 @@ func (p *proxy) loadProxyMap(ProxyMap *sync.Map) {
 
 //Set Up the Proxy handler and save it in ProxyCache as cache
 func (p *proxy) setUpProxy() {
-
 	for pattern, targetHost := range p.hostTarget {
 		remoteUrl, err := url.Parse(targetHost)
 		CheckError(err)
@@ -80,7 +76,7 @@ func (p *proxy) HandlerWithCache(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func ServerClose(ctx context.Context,server *http.Server){
+func ServerClose(ctx context.Context, server *http.Server) {
 	select {
 	case <-ctx.Done():
 		server.SetKeepAlivesEnabled(false)

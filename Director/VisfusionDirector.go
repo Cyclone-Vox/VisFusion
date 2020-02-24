@@ -11,39 +11,18 @@ import (
 func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
-		path := string(ctx.Path())
-		tk := ctx.Request.Header.Peek("token")
 		r := RedisPool.Get()
 		defer r.Close()
-
-		switch path {
-		//if Path equals "devreg",it Means this device's request is login or register
-		case "devreg":
-			CertCheckOrReg(ctx)
-			return
-
+		CertCheckOrReg(ctx)
 		//if Path not equals "devreg",it Means this device's request is licgen or heartbeat
-		default:
-			if err := TokenCheck(string(tk), r); err == nil {
-				switch path {
-				case "/licgen":
-					licgen(ctx)
-				case "/ping":
-					ping(ctx)
-				default:
-					ctx.Error("Unsupported path", fasthttp.StatusNotFound)
-				}
-			} else {
-				TokenError(ctx)
-			}
-
-			return
-		}
+		return
 	}
 
 	ln, err := net.Listen("tcp4", ":"+ip)
 	CheckError(err)
-	fasthttp.Serve(ln, requestHandler)
+	ser:=&fasthttp.Server{Handler:requestHandler}
+	go ServerClose(ctx,ser)
+	ser.Serve(ln)
 	//wait context cancel,then close the listener and set up a new http service
 	select {
 	case <-ctx.Done():
@@ -51,4 +30,10 @@ func Director(ctx context.Context, ip string, RedisPool *redis.Pool) {
 		Director(ctx, ip, RedisPool)
 	}
 
+}
+func ServerClose(ctx context.Context, server *fasthttp.Server) {
+	select {
+	case <-ctx.Done():
+		server.Shutdown()
+	}
 }
