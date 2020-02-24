@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 )
+var Db *sql.DB
+
 
 func MysqlConn()  {
 	fmt.Println("mysql", DataSourceCfg.MySqlUser+":"+DataSourceCfg.MySqlPW+"@tcp("+DataSourceCfg.MySqlIP+")/"+DataSourceCfg.MySqlDB+"?charset=utf8")

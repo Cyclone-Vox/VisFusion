@@ -48,7 +48,7 @@ func CertCheckOrReg(ctx *fasthttp.RequestCtx) {
 			_, err = redis.String(r.Do("SET", mc, ""))
 			CheckError(err)
 
-			_, err = CfgLoad.Conf.Db.Exec("INSERT into "+CfgLoad.Conf.MySqlDB+".MACHINE_CODE_LIST(MACHINE_CODE,IP) value (?,?)", mc, ctx.RemoteIP().String())
+			_, err = DataConn.Db.Exec("INSERT into "+CfgLoad.Conf.MySqlDB+".MACHINE_CODE_LIST(MACHINE_CODE,IP) value (?,?)", mc, ctx.RemoteIP().String())
 			CheckError(err)
 			resp, err = json.Marshal(CfgLoad.HttpsReg{
 				STATUS: 0,
