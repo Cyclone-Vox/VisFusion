@@ -1,9 +1,8 @@
 package main
 
 import (
-	"VisFusion/Director"
-	"VisFusion/ReversProxy"
-	"context"
+	"VisFusion/CfgLoad"
+	"fmt"
 )
 
 func init()  {
@@ -16,8 +15,11 @@ func init()  {
 //And SetUp Watcher to Configuration File
 //Also,it Sets Cfg into Goroutines in this function.
 func main()  {
-	ctx, cancel := context.WithCancel(context.Background())
-	Director.Director(ctx,"8899")
-	ReversProxy.ProxySetUp(ctx,)
+
+	c:=CfgLoad.LoadCfg()
+	fmt.Printf("%+v",c.DevCfgMap["flow"])
+	//ctx, cancel := context.WithCancel(context.Background())
+	//Director.Director(ctx,"8899")
+	//ReversProxy.ProxySetUp(ctx,)
 
 }

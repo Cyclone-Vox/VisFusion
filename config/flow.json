@@ -1,0 +1,109 @@
+{
+  "status": 1,
+  "cfg": {
+    "startup": [
+      {
+        "name": "vispoint",
+        "downurl": "https://1.com:10010/vispoint.tar.gz",
+        "params": {
+          "cmcc_sn": "",
+          "cmcc_token": "",
+          "cmcc_pid": ""
+        }
+
+      },
+      {
+        "name": "hlsplayer",
+        "downurl": "https://1.com:10010/hlsplayer.tar.gz",
+        "params": {
+
+        }
+      },
+      {
+        "name": "udp",
+        "downurl": "https://1.com:10010/udp.tar.gz",
+        "params": {
+
+        }
+      }
+
+
+    ],
+    "pull": [
+      {
+        "type": "hls",
+        "url": [
+          "http://117.148.187.5:80/hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221229017/index.m3u8",
+          "http://39.134.177.169/hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221228827/index.m3u8",
+          "http://39.134.177.169/hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221228822/index.m3u8",
+          "http://39.134.177.169/hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221228354/42329929.smil/index.m3u8?fmt=ts2hls"
+        ],
+        "app": "hlsplayer",
+        "filename": "hlslink.lst",
+        "isclear": true
+      }
+
+    ],
+    "post": {
+      "posturl": "https://1.com:10086/upload",
+      "uploadurl": "https://1.com:10010/uploadfile",
+      "hls_event_pull": {
+        "switch": true
+      },
+      "device_info": {
+        "cycle": 10,
+        "switch": true
+      },
+      "mp_2_t_index": {
+        "cycle": 10,
+        "switch": true
+      },
+      "hls_index": {
+        "cycle": 10,
+        "switch": true
+      },
+      "vq_index": {
+        "cycle": 10,
+        "switch": true
+      },
+      "rtsp_event": {
+
+        "switch": true
+      },
+      "mp_2_t_event": {
+        "switch": true
+      },
+      "hls_event": {
+        "switch": true
+      },
+      "igmp_event": {
+        "switch": true
+      },
+      "alarm_data": {
+        "switch": true
+      }
+    },
+    "pong": {
+      "cycle": 10,
+      "pongurl": "https://1.com:10086/ping",
+      "tcp": "192.168.2.22:12580",
+      "linshi_tcp": "https://1.com:10086/insdata"
+    },
+    "alarm": {},
+    "command": [
+      {
+        "command": "",
+        "response": ""
+      },
+      {
+        "command": "",
+        "response": ""
+      }
+    ]
+  },
+  "token": ""
+}
+
+
+
+
